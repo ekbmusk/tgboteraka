@@ -28,11 +28,39 @@ def create_tables():
     from app.models import user, problem, test_result, progress as prog  # noqa
     from app.models import admin_user, admin_test, theory_content, broadcast_log, chat_history  # noqa
     Base.metadata.create_all(bind=engine)
+    _migrate_postgres()
     _migrate_sqlite()
     _seed_admin_user()
     _seed_admin_tests()
     _seed_theory_content()
     _seed_problems()
+
+
+def _migrate_postgres():
+    """Fix column types for PostgreSQL (telegram_id needs BIGINT)."""
+    if "sqlite" in DATABASE_URL:
+        return
+
+    import logging
+    logger = logging.getLogger(__name__)
+
+    migrations = [
+        ("users", "telegram_id", "BIGINT"),
+        ("chat_history", "telegram_id", "BIGINT"),
+    ]
+
+    with engine.connect() as conn:
+        for table, column, col_type in migrations:
+            try:
+                conn.execute(
+                    __import__("sqlalchemy").text(
+                        f"ALTER TABLE {table} ALTER COLUMN {column} TYPE {col_type}"
+                    )
+                )
+                conn.commit()
+            except Exception as e:
+                conn.rollback()
+                logger.debug(f"PG migration {table}.{column}: {e}")
 
 
 def _migrate_sqlite():
