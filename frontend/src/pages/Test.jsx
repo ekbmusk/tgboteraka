@@ -15,12 +15,22 @@ import { useUserStore } from '../store/userStore'
 const TIMER = 20
 
 const TOPIC_ICONS = {
-  mechanics: '⚙️',
-  thermodynamics: '🌡️',
-  electromagnetism: '⚡',
-  optics: '🔭',
-  quantum: '⚛️',
-  nuclear: '☢️',
+  'Кинематика негіздері': '📐',
+  'Жылдамдық және үдеу': '🏎️',
+  'Ньютон заңдары (1)': '⚙️',
+  'Ньютон заңдары (2)': '⚙️',
+  'Жұмыс, энергия, қуат': '⚡',
+  'Сақталу заңдары': '🔄',
+  'Айналмалы қозғалыс': '🌀',
+  'Импульс моменті': '💫',
+  'Бүкіл әлемдік тартылыс': '🌍',
+  'Салыстырмалылық теориясы': '🚀',
+  'Қысым және гидростатика': '💧',
+  'Бернулли теңдеуі': '🌊',
+  'Сұйықтық динамикасы': '🔬',
+  'Тербелістер': '〰️',
+  'Акустика': '🔊',
+  'Жалпы физика': '⚛️',
 }
 
 function TimerCircle({ seconds }) {
@@ -88,12 +98,22 @@ function ResultScreen({ score, total, pct, xpEarned, bonusXp, isDaily, onRetry, 
   )
 }
 
-function TopicSelect({ topics, loading, onSelect }) {
+function TopicSelect({ topics, loading, error, onRetry, onSelect }) {
   if (loading) return (
     <div className="min-h-screen bg-bg page-enter">
       <TopBar />
       <div className="px-4 pt-4 space-y-3">
         {[0,1,2,3].map(i => <div key={i} className="skeleton h-20 rounded-2xl" />)}
+      </div>
+    </div>
+  )
+
+  if (error) return (
+    <div className="min-h-screen bg-bg page-enter">
+      <TopBar />
+      <div className="text-center py-16">
+        <p className="text-text-3 text-sm mb-3">{error}</p>
+        <button onClick={onRetry} className="text-primary text-sm font-semibold">Қайталау</button>
       </div>
     </div>
   )
@@ -107,7 +127,7 @@ function TopicSelect({ topics, loading, onSelect }) {
 
         <button
           onClick={() => onSelect(null)}
-          className="w-full flex items-center gap-4 bg-gradient-primary rounded-2xl px-4 py-4 mb-4 pressable shadow-glow-primary"
+          className="w-full flex items-center gap-4 bg-gradient-primary rounded-2xl px-4 py-4 mb-4 pressable shadow-glow-primary glass-shine"
         >
           <div className="w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center text-xl flex-shrink-0">
             <Shuffle size={20} className="text-white" />
@@ -119,23 +139,30 @@ function TopicSelect({ topics, loading, onSelect }) {
           <ChevronRight size={18} className="text-white/70 ml-auto" />
         </button>
 
-        <div className="space-y-2.5">
-          {topics.map(topic => (
-            <button
-              key={topic.id}
-              onClick={() => onSelect(topic.id)}
-              className="w-full flex items-center gap-4 bg-surface border border-border rounded-2xl px-4 py-4 pressable"
-            >
-              <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center text-xl flex-shrink-0">
-                {TOPIC_ICONS[topic.id] || <BookOpen size={20} className="text-primary" />}
-              </div>
-              <div className="text-left flex-1">
-                <p className="text-sm font-semibold text-text-1">{topic.name}</p>
-                <p className="text-xs text-text-3">{topic.count} сұрақ</p>
-              </div>
-              <ChevronRight size={18} className="text-text-3" />
-            </button>
-          ))}
+        <div className="mb-3">
+          <div className="flex items-center gap-2 mb-2.5">
+            <span className="text-lg">⚙️</span>
+            <h3 className="text-sm font-bold text-text-1 uppercase tracking-wider">Механика</h3>
+            <span className="text-xs text-text-3 ml-auto">{topics.reduce((s, t) => s + t.count, 0)} сұрақ</span>
+          </div>
+          <div className="space-y-2">
+            {topics.map(topic => (
+              <button
+                key={topic.id}
+                onClick={() => onSelect(topic.id)}
+                className="w-full flex items-center gap-3 glass-card rounded-2xl px-4 py-3.5 pressable"
+              >
+                <span className="text-lg w-8 text-center flex-shrink-0">
+                  {TOPIC_ICONS[topic.id] || '📝'}
+                </span>
+                <div className="text-left flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-text-1 truncate">{topic.name}</p>
+                  <p className="text-xs text-text-3">{topic.count} сұрақ</p>
+                </div>
+                <ChevronRight size={16} className="text-text-3 flex-shrink-0" />
+              </button>
+            ))}
+          </div>
         </div>
 
         {topics.length === 0 && (
@@ -154,6 +181,7 @@ export default function Test() {
 
   const [topics, setTopics] = useState([])
   const [topicsLoading, setTopicsLoading] = useState(true)
+  const [topicsError, setTopicsError] = useState(null)
   const [selectedTopic, setSelectedTopic] = useState(isDaily ? null : undefined)
 
   const [qs, setQs] = useState([])
@@ -161,26 +189,30 @@ export default function Test() {
   const [sel, setSel] = useState(null)
   const [answers, setAnswers] = useState([])
   const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState(null)
   const [done, setDone] = useState(false)
   const [score, setScore] = useState(null)
   const [timer, setTimer] = useState(TIMER)
   const timerRef = useRef(null)
 
-  useEffect(() => {
+  const fetchTopics = () => {
+    setTopicsLoading(true); setTopicsError(null)
     testsAPI.getTopics()
       .then(setTopics)
-      .catch(() => setTopics([]))
+      .catch(() => setTopicsError('Тесттер жүктелмеді'))
       .finally(() => setTopicsLoading(false))
-  }, [])
+  }
+
+  useEffect(() => { fetchTopics() }, [])
 
   const load = useCallback(async (topic) => {
-    setLoading(true); setCur(0); setAnswers([]); setSel(null); setDone(false); setScore(null); setTimer(TIMER)
+    setLoading(true); setCur(0); setAnswers([]); setSel(null); setDone(false); setScore(null); setTimer(TIMER); setLoadError(null)
     try {
       const d = isDaily
         ? await testsAPI.getDailyTest()
         : await testsAPI.getTest(topic ? { topic, count: 10 } : { count: 10 })
       setQs(d.questions)
-    } catch { setQs([]) }
+    } catch { setLoadError('Сұрақтар жүктелмеді') }
     finally { setLoading(false) }
   }, [isDaily])
 
@@ -220,11 +252,15 @@ export default function Test() {
     clearInterval(timerRef.current); setSel(i); WebApp.HapticFeedback.impactOccurred('light')
   }
 
+  const [submitting, setSubmitting] = useState(false)
+
   const handleNext = async () => {
+    if (submitting) return
     const newAns = [...answers, { question_id: qs[cur].id, answer: sel ?? -1 }]
     setAnswers(newAns)
     if (cur + 1 < qs.length) { setCur(c => c + 1); setSel(null); setTimer(TIMER) }
     else {
+      setSubmitting(true)
       try {
         const r = await testsAPI.submitTest({ telegram_id: user?.id, answers: newAns, is_daily: isDaily })
         setScore(r); WebApp.HapticFeedback.notificationOccurred(r.percentage >= 70 ? 'success' : 'warning')
@@ -238,7 +274,7 @@ export default function Test() {
 
   // Topic selection screen
   if (selectedTopic === undefined) {
-    return <TopicSelect topics={topics} loading={topicsLoading} onSelect={handleTopicSelect} />
+    return <TopicSelect topics={topics} loading={topicsLoading} error={topicsError} onRetry={fetchTopics} onSelect={handleTopicSelect} />
   }
 
   if (loading) return (
@@ -265,10 +301,13 @@ export default function Test() {
   )
 
   const q = qs[cur]
-  if (!q) return (
+  if (loadError || !q) return (
     <div className="min-h-screen bg-bg flex flex-col items-center justify-center px-6 text-center">
-      <p className="text-text-2 text-sm mb-4">Сұрақтар жүктелмеді. Қайтадан көріңіз.</p>
-      <Button variant="secondary" onClick={handleBackToTopics}>Артқа</Button>
+      <p className="text-text-2 text-sm mb-4">{loadError || 'Сұрақтар жүктелмеді. Қайтадан көріңіз.'}</p>
+      <div className="flex gap-3">
+        <Button variant="secondary" onClick={() => load(selectedTopic)}>Қайталау</Button>
+        <Button variant="secondary" onClick={handleBackToTopics}>Артқа</Button>
+      </div>
     </div>
   )
 
@@ -289,13 +328,13 @@ export default function Test() {
           <TimerCircle seconds={timer} />
         </div>
 
-        <div className="card p-5 mb-4 flex-shrink-0 animate-slide-up">
+        <div className="glass-hero p-5 mb-4 flex-shrink-0 animate-slide-up">
           <FormulaRenderer text={q.question} />
         </div>
 
         <div className="space-y-2.5 flex-1">
           {q.options.map((opt, i) => {
-            let cls = 'border-border text-text-1 bg-surface'
+            let cls = 'border-border text-text-1 glass-input'
             if (sel !== null) {
               if (i === q.correct_answer) cls = 'border-success bg-success/10 text-success'
               else if (i === sel) cls = 'border-danger bg-danger/10 text-danger'
@@ -317,13 +356,13 @@ export default function Test() {
         {sel !== null && (
           <div className="mt-4 animate-slide-up">
             {q.explanation && (
-              <div className="bg-primary-dim border border-primary/20 rounded-2xl p-3 mb-3 flex gap-2.5">
+              <div className="glass-card rounded-2xl p-3 mb-3 flex gap-2.5">
                 <Lightbulb size={16} strokeWidth={1.5} className="text-primary flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-text-2">{q.explanation}</p>
               </div>
             )}
-            <Button onClick={handleNext} icon={<ChevronRight size={16} />}>
-              {cur + 1 < qs.length ? 'Келесі' : 'Аяқтау'}
+            <Button onClick={handleNext} disabled={submitting} icon={<ChevronRight size={16} />}>
+              {submitting ? 'Жіберілуде...' : cur + 1 < qs.length ? 'Келесі' : 'Аяқтау'}
             </Button>
           </div>
         )}

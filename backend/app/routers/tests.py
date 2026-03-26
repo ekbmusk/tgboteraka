@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone, date
 import random
@@ -84,7 +84,7 @@ def get_daily_status(telegram_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/random", response_model=TestSet)
-def get_random_test(count: int = 10, topic: str = None, db: Session = Depends(get_db)):
+def get_random_test(count: int = Query(10, ge=1, le=50), topic: str = None, db: Session = Depends(get_db)):
     query = db.query(AdminTestQuestion)
     if topic:
         query = query.filter(AdminTestQuestion.topic == topic)
@@ -96,7 +96,7 @@ def get_random_test(count: int = 10, topic: str = None, db: Session = Depends(ge
 
 
 @router.post("/submit", response_model=TestResultOut)
-async def submit_test(body: TestSubmit, db: Session = Depends(get_db)):
+async def submit_test(body: TestSubmit, request: Request, db: Session = Depends(get_db)):
     question_ids = [a.question_id for a in body.answers]
     db_questions = db.query(AdminTestQuestion).filter(AdminTestQuestion.id.in_(question_ids)).all()
     question_map = {q.id: q for q in db_questions}
@@ -126,11 +126,22 @@ async def submit_test(body: TestSubmit, db: Session = Depends(get_db)):
 
     percentage = round((correct / total * 100) if total > 0 else 0, 1)
     actual_bonus_xp = 0
+    base_xp = 0
 
-    if body.telegram_id:
-        user = db.query(User).filter(User.telegram_id == body.telegram_id).first()
+    # Prefer telegram_id from header (secure), fallback to body
+    telegram_id = body.telegram_id
+    try:
+        from app.routers.users import _extract_telegram_id
+        header_id = _extract_telegram_id(request)
+        if header_id:
+            telegram_id = header_id
+    except Exception:
+        pass
+
+    if telegram_id:
+        user = db.query(User).filter(User.telegram_id == telegram_id).first()
         if not user:
-            user = User(telegram_id=body.telegram_id)
+            user = User(telegram_id=telegram_id)
             db.add(user)
             db.flush()
         elif user.is_banned:
@@ -138,7 +149,8 @@ async def submit_test(body: TestSubmit, db: Session = Depends(get_db)):
 
         base_xp = int(percentage)
         bonus_xp = 0
-        today_str = date.today().isoformat()
+        from app.services.progress_service import KZ_TZ
+        today_str = datetime.now(timezone.utc).astimezone(KZ_TZ).date().isoformat()
 
         if body.is_daily and user.last_daily_date != today_str:
             actual_bonus_xp = 50
@@ -146,21 +158,8 @@ async def submit_test(body: TestSubmit, db: Session = Depends(get_db)):
 
         user.score = (user.score or 0) + base_xp + actual_bonus_xp
 
-        # Fix streak
-        now = datetime.now(timezone.utc)
-        last = user.last_activity
-        if last:
-            last_aware = last.replace(tzinfo=timezone.utc) if last.tzinfo is None else last
-            diff_days = (now.date() - last_aware.date()).days
-            if diff_days == 1:
-                user.streak = (user.streak or 0) + 1
-            elif diff_days == 0:
-                pass  # already active today
-            else:
-                user.streak = 1
-        else:
-            user.streak = 1
-        user.last_activity = now
+        from app.services.progress_service import update_streak
+        update_streak(db, user)
 
         result = TestResult(
             user_id=user.id,
@@ -195,12 +194,13 @@ async def submit_test(body: TestSubmit, db: Session = Depends(get_db)):
 
         db.commit()
 
+    xp_earned = (base_xp + actual_bonus_xp) if telegram_id else 0
     return TestResultOut(
         correct=correct,
         total=total,
         percentage=percentage,
         passed=percentage >= 70,
-        xp_earned=int(percentage) if body.telegram_id else 0,
+        xp_earned=xp_earned,
         bonus_xp=actual_bonus_xp,
     )
 

@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import httpx
 from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
@@ -8,6 +9,7 @@ from config import BACKEND_URL
 from keyboards.inline_kb import profile_keyboard
 
 router = Router()
+logger = logging.getLogger(__name__)
 
 
 async def _fetch_profile(telegram_id: int) -> dict:
@@ -30,7 +32,8 @@ async def _fetch_profile(telegram_id: int) -> dict:
                 "score": my_rank.get("score", 0),
                 "rank": my_rank.get("rank"),
             }
-    except Exception:
+    except Exception as e:
+        logger.error(f"Failed to fetch profile for {telegram_id}: {e}")
         return {}
 
 
@@ -75,5 +78,5 @@ async def refresh_profile(query: CallbackQuery):
             parse_mode="HTML",
             reply_markup=profile_keyboard(),
         )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Failed to edit profile message: {e}")

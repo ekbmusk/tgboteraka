@@ -72,8 +72,11 @@ async def notification_loop(bot: Bot, interval_seconds: int = 3600):
     logger.info(f"Notification loop started (interval: {interval_seconds}s)")
     while True:
         await asyncio.sleep(interval_seconds)
-        logger.info("Checking for inactive users to notify...")
-        await send_reminders(bot)
+        try:
+            logger.info("Checking for inactive users to notify...")
+            await send_reminders(bot)
+        except Exception as e:
+            logger.error(f"Error in notification loop: {e}")
 
 
 @router.callback_query(F.data == "disable_notifications")
@@ -85,8 +88,8 @@ async def disable_notifications(callback: CallbackQuery):
                 f"{BACKEND_URL}/api/users/{telegram_id}/notifications",
                 json={"enabled": False},
             )
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Failed to disable notifications for {telegram_id}: {e}")
 
     await callback.answer("Хабарландырулар өшірілді")
     try:

@@ -6,11 +6,11 @@ export default function Button({ children, onClick, variant = 'primary', disable
     lg: 'py-4 px-8 text-base w-full',
   }
   const variants = {
-    primary: 'bg-primary text-white shadow-glow-primary hover:bg-primary/90',
-    secondary: 'bg-surface-2 text-text-1 border border-border hover:bg-surface-2/70',
+    primary: 'glass-btn text-white shadow-glow-primary bg-primary/80',
+    secondary: 'glass-input text-text-1',
     ghost: 'text-primary hover:bg-primary-dim',
-    danger: 'bg-danger/20 text-danger border border-danger/30 hover:bg-danger/30',
-    success: 'bg-success/20 text-success border border-success/30',
+    danger: 'glass-input text-danger !border-danger/30',
+    success: 'glass-input text-success !border-success/30',
   }
   return (
     <button onClick={onClick} disabled={disabled} className={`${base} ${sizes[size]} ${variants[variant]} ${className}`}>

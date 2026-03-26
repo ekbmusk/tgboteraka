@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import WebApp from '@twa-dev/sdk'
-import { BookOpen, Calculator, Brain, Trophy, BarChart2, HelpCircle, Flame, CheckCircle2, ChevronRight, Zap } from 'lucide-react'
+import { BookOpen, Calculator, Brain, Trophy, BarChart2, HelpCircle, Flame, CheckCircle2, ChevronRight, Zap, Users } from 'lucide-react'
 import TopBar from '../components/TopBar'
 import ProgressBar from '../components/ProgressBar'
 import { progressAPI } from '../api/progress'
@@ -36,10 +36,11 @@ export default function Home() {
   useEffect(() => {
     if (user?.id) {
       progressAPI.getUserProgress(user.id).then(setStats).catch(() => { }).finally(() => setLoading(false))
-      testsAPI.getDailyStatus(user.id).then(setDailyStatus).catch(() => {})
+      testsAPI.getDailyStatus(user.id).then(setDailyStatus).catch(() => { })
     } else setLoading(false)
   }, [user?.id])
 
+  const [showAuthors, setShowAuthors] = useState(false)
   const nav = (path) => { WebApp.HapticFeedback.impactOccurred('light'); navigate(path) }
   const lastTopic = stats?.topics?.find(t => t.percent > 0 && t.percent < 100)
 
@@ -48,9 +49,8 @@ export default function Home() {
       <TopBar />
       <div className="px-4 space-y-4 pt-2 pb-4">
 
-        {/* Hero */}
-        <div className="relative rounded-3xl overflow-hidden border border-primary/20 p-5 shadow-glow-primary/10 card-lift"
-          style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.15) 0%, #1A1A2E 60%, #0F0F1A 100%)' }}>
+        <div className="relative rounded-3xl overflow-hidden p-5 card-lift glass-hero glass-shine glass-glow glass-ambient"
+          style={{ background: 'linear-gradient(135deg, rgba(108,99,255,0.15) 0%, rgba(26,26,46,0.5) 60%, rgba(15,15,26,0.7) 100%)' }}>
           <div className="absolute -top-8 -right-8 w-28 h-28 rounded-full bg-primary/20 blur-2xl effect-glow-pulse" />
           <div className="absolute -bottom-10 -left-8 w-24 h-24 rounded-full bg-secondary/20 blur-2xl effect-drift" />
           <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
@@ -86,7 +86,7 @@ export default function Home() {
               { Icon: CheckCircle2, label: 'Есеп', value: stats?.problems_solved || 0, color: 'text-success' },
               { Icon: Brain, label: 'Тест', value: stats?.tests_taken || 0, color: 'text-primary' },
             ].map((s, i) => (
-              <div key={i} className="bg-surface border border-border rounded-2xl p-3 text-center shadow-card">
+              <div key={i} className="glass-card rounded-2xl p-3 text-center shadow-card">
                 <s.Icon size={22} strokeWidth={1.5} className={`mx-auto mb-1.5 ${s.color}`} />
                 <div className="text-lg font-bold text-text-1">{s.value}</div>
                 <div className="text-[11px] text-text-2">{s.label}</div>
@@ -99,11 +99,10 @@ export default function Home() {
         {dailyStatus && (
           <button
             onClick={() => !dailyStatus.completed && nav('/test?mode=daily')}
-            className={`w-full rounded-2xl p-4 text-left border transition-all ${
-              dailyStatus.completed
+            className={`w-full rounded-2xl p-4 text-left border transition-all ${dailyStatus.completed
                 ? 'bg-surface border-success/30 opacity-70 cursor-default'
                 : 'bg-surface border-warning/30 pressable card-lift shadow-card'
-            }`}
+              }`}
           >
             <div className="flex items-center gap-3">
               <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${dailyStatus.completed ? 'bg-success/10' : 'bg-warning/10'}`}>
@@ -150,7 +149,7 @@ export default function Home() {
               <button
                 key={path}
                 onClick={() => nav(path)}
-                className="w-full bg-surface border border-border rounded-2xl p-4 text-left pressable shadow-card card-lift"
+                className="w-full glass-card rounded-2xl p-4 text-left pressable card-lift"
                 style={{ borderLeft: `3px solid ${accent}` }}
               >
                 <div className="flex items-center gap-3">
@@ -167,6 +166,40 @@ export default function Home() {
             ))}
           </div>
         </div>
+
+        {/* Authors */}
+        <button
+          onClick={() => { WebApp.HapticFeedback.impactOccurred('light'); setShowAuthors(!showAuthors) }}
+          className="w-full glass-input rounded-2xl px-4 py-3 pressable"
+        >
+          <div className="flex items-center justify-center gap-2">
+            <Users size={14} className="text-text-3" />
+            <span className="text-xs text-text-3">Авторлар</span>
+          </div>
+        </button>
+
+        {showAuthors && (
+          <div className="glass-card rounded-2xl p-4 animate-slide-up">
+            <p className="text-xs font-semibold text-text-2 uppercase tracking-wider mb-3">Жобаны жасаған авторлар</p>
+            <div className="space-y-2">
+              {[
+                'Еділбаев Ержан Нұрланұлы',
+                'Полатұлы Серік',
+                'Сарыбаева Әлия Хожанқызы',
+                'Жоранова Диёра Фархадқызы',
+                'Курбанбеков Бакытжан Алимханович',
+                'Тулеутаев Бекарыс Талгатович',
+              ].map((name, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="w-7 h-7 rounded-full glass-btn flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0">
+                    {i + 1}
+                  </div>
+                  <p className="text-sm text-text-1">{name}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

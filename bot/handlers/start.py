@@ -1,5 +1,6 @@
 from pathlib import Path
 from html import escape
+import logging
 import httpx
 from aiogram import Router, F
 from aiogram.types import (
@@ -17,6 +18,7 @@ from keyboards.main_kb import get_main_keyboard
 from keyboards.inline_kb import open_app_button, profile_keyboard
 
 router = Router()
+logger = logging.getLogger(__name__)
 
 BANNER_PATH = Path(__file__).parent.parent / "assets" / "welcome_banner.png"
 MEDAL = ["🥇", "🥈", "🥉"]
@@ -68,8 +70,8 @@ async def _register_user(user) -> tuple[bool, dict | None]:
             if r.status_code == 200:
                 data = r.json()
                 return data.get("is_new", False), data
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"Failed to register user {user.id}: {e}")
     return False, None
 
 
@@ -89,7 +91,8 @@ async def _get_user_stats(telegram_id: int) -> dict:
                 "problems_solved": progress.get("problems_solved", 0),
                 "rank": my_rank.get("rank"),
             }
-    except Exception:
+    except Exception as e:
+        logger.error(f"Failed to get stats for {telegram_id}: {e}")
         return {}
 
 
@@ -102,8 +105,8 @@ async def _get_top5() -> list[dict]:
             )
             if r.status_code == 200:
                 return r.json().get("leaderboard", [])
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"Failed to get top5: {e}")
     return []
 
 

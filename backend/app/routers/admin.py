@@ -16,6 +16,7 @@ from app.models.broadcast_log import BroadcastLog
 from app.models.problem import Problem
 from app.models.progress import Progress
 from app.models.test_result import TestResult
+from app.models.chat_history import ChatHistory
 from app.models.theory_content import TheoryContent
 from app.models.user import User
 from app.schemas.admin import (
@@ -245,7 +246,7 @@ async def bulk_import_problems(
                 difficulty=row.get("difficulty"),
                 tags=[t.strip() for t in (row.get("tags") or "").split("|") if t.strip()],
             )
-            if not problem.topic or not problem.question or not problem.correct_answer:
+            if not problem.topic or not problem.question:
                 raise ValueError("Міндетті өрістер бос")
 
             db.add(problem)
@@ -521,6 +522,94 @@ async def get_user_profile(
         tests_summary=tests_summary,
         progress_summary=progress_summary,
     )
+
+
+@router.get("/users/{user_id}/activity")
+async def get_user_activity(
+    user_id: int,
+    _: AdminUser = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    """Detailed user activity: test history, progress per topic, AI chat history."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Пайдаланушы табылмады")
+
+    # Test history (last 50)
+    tests = (
+        db.query(TestResult)
+        .filter(TestResult.user_id == user.id)
+        .order_by(TestResult.created_at.desc())
+        .limit(50)
+        .all()
+    )
+    test_history = [
+        {
+            "id": t.id,
+            "total_questions": t.total_questions,
+            "correct_answers": t.correct_answers,
+            "percentage": round(t.percentage, 1),
+            "date": t.created_at.isoformat() if t.created_at else None,
+        }
+        for t in tests
+    ]
+
+    # Progress per topic
+    progress = db.query(Progress).filter(Progress.user_id == user.id).all()
+    topic_progress = [
+        {
+            "topic_id": p.topic_id,
+            "topic_name": p.topic_name,
+            "completion_percent": round(p.completion_percent, 1),
+            "problems_solved": p.problems_solved,
+            "last_updated": p.last_updated.isoformat() if p.last_updated else None,
+        }
+        for p in progress
+    ]
+
+    # AI chat history (last 30 messages)
+    chats = (
+        db.query(ChatHistory)
+        .filter(ChatHistory.telegram_id == user.telegram_id)
+        .order_by(ChatHistory.created_at.desc())
+        .limit(30)
+        .all()
+    )
+    chat_history = [
+        {
+            "role": c.role,
+            "content": c.content[:500],  # truncate long messages
+            "date": c.created_at.isoformat() if c.created_at else None,
+        }
+        for c in reversed(chats)  # chronological order
+    ]
+
+    return {
+        "user": {
+            "id": user.id,
+            "telegram_id": user.telegram_id,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "username": user.username,
+            "score": user.score or 0,
+            "streak": user.streak or 0,
+            "level": user.level,
+            "is_active": user.is_active,
+            "is_banned": user.is_banned,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "last_activity": user.last_activity.isoformat() if user.last_activity else None,
+        },
+        "test_history": test_history,
+        "topic_progress": topic_progress,
+        "chat_history": chat_history,
+        "summary": {
+            "total_tests": len(tests),
+            "avg_score": round(sum(t.percentage for t in tests) / len(tests), 1) if tests else 0,
+            "total_problems_solved": sum(p.problems_solved for p in progress),
+            "topics_started": len(progress),
+            "ai_questions_asked": len([c for c in chats if c.role == "user"]),
+        },
+    }
 
 
 @router.patch("/users/{user_id}/ban", response_model=ToggleFlagResponse)

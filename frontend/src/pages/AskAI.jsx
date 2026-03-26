@@ -64,7 +64,7 @@ export default function AskAI() {
                 </div>
               )}
               <div className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                isUser ? 'bg-primary text-white rounded-br-sm' : 'bg-surface border border-border text-text-1 rounded-bl-sm'}`}>
+                isUser ? 'bg-primary text-white rounded-br-sm' : 'glass-card text-text-1 rounded-bl-sm'}`}>
                 {!isUser && hasFormula(msg.content)
                   ? <FormulaRenderer text={msg.content} />
                   : <span className="whitespace-pre-wrap">{msg.content}</span>
@@ -83,7 +83,7 @@ export default function AskAI() {
             <div className="flex flex-wrap gap-2 justify-center">
               {EXAMPLES.map((q, i) => (
                 <button key={i} onClick={() => send(q)}
-                  className="text-xs bg-surface text-primary border border-primary/25 rounded-full px-3 py-1.5 pressable">
+                  className="text-xs glass-input text-primary border border-primary/25 rounded-full px-3 py-1.5 pressable">
                   {q}
                 </button>
               ))}
@@ -108,14 +108,14 @@ export default function AskAI() {
 
       <div className="px-4 pt-2 border-t border-border" style={{ paddingBottom: 'calc(72px + max(8px, env(safe-area-inset-bottom)))' }}>
         <div className="flex items-center gap-2">
-          <div className="flex-1 bg-surface border border-border rounded-2xl px-4 py-3">
+          <div className="flex-1 glass-input rounded-2xl px-4 py-3">
             <input type="text" value={input} onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && send()}
               placeholder="Физика сұрағыңды жаз..."
               className="w-full bg-transparent text-text-1 text-sm outline-none placeholder:text-text-3" />
           </div>
           <button onClick={() => send()} disabled={!input.trim() || loading}
-            className="w-11 h-11 rounded-2xl bg-primary flex items-center justify-center shadow-glow-primary disabled:opacity-30 disabled:shadow-none pressable flex-shrink-0">
+            className="w-11 h-11 rounded-2xl bg-primary flex items-center justify-center shadow-glow-primary glass-btn disabled:opacity-30 disabled:shadow-none pressable flex-shrink-0">
             <Send size={18} strokeWidth={2} className="text-white" />
           </button>
         </div>

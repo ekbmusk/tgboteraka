@@ -32,6 +32,7 @@ def create_tables():
     _seed_admin_user()
     _seed_admin_tests()
     _seed_theory_content()
+    _seed_problems()
 
 
 def _migrate_sqlite():
@@ -49,6 +50,9 @@ def _migrate_sqlite():
         ("users", "last_daily_date",        "VARCHAR"),
     ]
 
+    import logging
+    logger = logging.getLogger(__name__)
+
     with engine.connect() as conn:
         for table, column, col_def in migrations:
             try:
@@ -58,9 +62,12 @@ def _migrate_sqlite():
                     )
                 )
                 conn.commit()
-            except Exception:
-                # Column already exists — safe to ignore
-                pass
+            except Exception as e:
+                err_msg = str(e).lower()
+                if "duplicate column" in err_msg or "already exists" in err_msg:
+                    pass  # Column already exists — safe to ignore
+                else:
+                    logger.warning(f"Migration failed for {table}.{column}: {e}")
 
 
 def _seed_admin_user():
@@ -94,14 +101,30 @@ def _seed_theory_content():
         {"topic_id": "optics", "title": "Оптика"},
         {"topic_id": "quantum", "title": "Кванттық физика"},
         {"topic_id": "nuclear", "title": "Ядролық физика"},
+        {"topic_id": "lecture_01", "title": "1-лекция: Механика негіздері"},
+        {"topic_id": "lecture_02", "title": "2-лекция: Кинематика"},
+        {"topic_id": "lecture_03", "title": "3-лекция: Динамика"},
+        {"topic_id": "lecture_04", "title": "4-лекция: Ньютон заңдары"},
+        {"topic_id": "lecture_05", "title": "5-лекция: Жұмыс және энергия"},
+        {"topic_id": "lecture_06", "title": "6-лекция: Сақталу заңдары"},
+        {"topic_id": "lecture_07", "title": "7-лекция: Айналмалы қозғалыс"},
+        {"topic_id": "lecture_08", "title": "8-лекция: Импульс моменті"},
+        {"topic_id": "lecture_09", "title": "9-лекция: Тартылыс заңы"},
+        {"topic_id": "lecture_10", "title": "10-лекция: Салыстырмалылық теориясы"},
+        {"topic_id": "lecture_11", "title": "11-лекция: Қысым және гидростатика"},
+        {"topic_id": "lecture_12", "title": "12-лекция: Гидродинамика"},
+        {"topic_id": "lecture_13", "title": "13-лекция: Сұйықтық динамикасы"},
+        {"topic_id": "lecture_14", "title": "14-лекция: Тербелістер"},
+        {"topic_id": "lecture_15", "title": "15-лекция: Акустика"},
     ]
 
     with SessionLocal() as db:
-        existing_count = db.query(TheoryContent).count()
-        if existing_count > 0:
-            return
         for topic in seeds:
-            db.add(TheoryContent(topic_id=topic["topic_id"], title=topic["title"], blocks=[]))
+            existing = db.query(TheoryContent).filter(
+                TheoryContent.topic_id == topic["topic_id"]
+            ).first()
+            if not existing:
+                db.add(TheoryContent(topic_id=topic["topic_id"], title=topic["title"], blocks=[]))
         db.commit()
 
 
@@ -136,4 +159,16 @@ def _seed_admin_tests():
                 )
             )
 
+        db.commit()
+
+
+def _seed_problems():
+    from app.models.problem import Problem
+    from app.routers.problems import SEED_PROBLEMS
+
+    with SessionLocal() as db:
+        if db.query(Problem).count() > 0:
+            return
+        for p in SEED_PROBLEMS:
+            db.add(Problem(**p))
         db.commit()

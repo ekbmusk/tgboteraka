@@ -177,7 +177,7 @@ function Screen1({ onNext, onSkip }) {
         {FEATURES.map((feat, i) => (
           <div
             key={i}
-            className="flex items-start gap-3 rounded-2xl p-4 border animate-slide-up"
+            className="flex items-start gap-3 rounded-2xl p-4 border animate-slide-up glass-card"
             style={{
               background: feat.bg,
               borderColor: feat.color + '35',
@@ -243,7 +243,7 @@ function Screen2({ selectedLevel, onSelect, onStart }) {
               onSelect(lvl.id)
               WebApp.HapticFeedback.impactOccurred('medium')
             }}
-              className="w-full text-left rounded-2xl p-4 border-2 transition-all duration-200 pressable"
+              className={`w-full text-left rounded-2xl p-4 border-2 transition-all duration-200 pressable ${sel ? 'glass-hero' : 'glass-card'}`}
               style={{
                 borderColor: sel ? lvl.color : 'rgba(255,255,255,0.08)',
                 background: sel ? lvl.color + '12' : 'rgba(255,255,255,0.03)',
@@ -272,7 +272,7 @@ function Screen2({ selectedLevel, onSelect, onStart }) {
 
       <button onClick={onStart} disabled={!selectedLevel}
         className={`w-full flex items-center justify-center gap-2 rounded-2xl py-4 font-bold text-white mt-4 mb-2 transition-all duration-200 ${
-          selectedLevel ? 'bg-gradient-primary shadow-glow-primary pressable' : 'bg-surface text-text-3 cursor-not-allowed'
+          selectedLevel ? 'bg-gradient-primary shadow-glow-primary pressable glass-shine' : 'bg-surface text-text-3 cursor-not-allowed'
         }`}>
         🚀 Қолданбаны ашу!
       </button>

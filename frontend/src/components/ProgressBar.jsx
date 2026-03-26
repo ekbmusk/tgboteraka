@@ -11,7 +11,7 @@ export default function ProgressBar({ value, max = 100, color = 'primary', size 
   const heights = { sm: 'h-1', md: 'h-1.5', lg: 'h-2.5' }
   return (
     <div className={className}>
-      <div className={`${heights[size]} bg-surface-2 rounded-full overflow-hidden`}>
+      <div className={`${heights[size]} rounded-full overflow-hidden`} style={{ background: 'rgba(37,37,64,0.5)', border: '1px solid rgba(255,255,255,0.05)' }}>
         <div
           className={`h-full ${COLORS[color] || COLORS.primary} rounded-full transition-all duration-700 ease-out`}
           style={{ width: `${percent}%` }}

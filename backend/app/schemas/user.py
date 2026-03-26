@@ -22,6 +22,7 @@ class UserOut(BaseModel):
     score: int
     streak: int
     level: str = "medium"
+    is_admin: bool = False
     notifications_enabled: bool = True
     created_at: datetime
     is_new: bool = False

@@ -8,7 +8,7 @@ class TestResult(Base):
     __tablename__ = "test_results"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     total_questions = Column(Integer, nullable=False)
     correct_answers = Column(Integer, nullable=False)
     percentage = Column(Float, nullable=False)

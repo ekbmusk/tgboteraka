@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.database.database import get_db
 from app.models.user import User
@@ -15,11 +15,10 @@ router = APIRouter()
 async def get_leaderboard(
     period: str = Query("week"),
     telegram_id: Optional[int] = Query(None),
-    limit: int = Query(50),
+    limit: int = Query(50, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
-    # Use naive UTC to match SQLite's timezone-unaware storage
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     if period == "week":
         since = now - timedelta(days=7)
     elif period == "month":
@@ -33,18 +32,16 @@ async def get_leaderboard(
         User.last_name,
         User.username,
         User.photo_url,
+        User.score.label("total_score"),
         func.count(TestResult.id).label("tests_taken"),
-        func.coalesce(func.sum(TestResult.percentage), 0).label("total_score"),
     ).join(TestResult, TestResult.user_id == User.id, isouter=True)
 
     if since:
         query = query.filter(TestResult.created_at >= since)
 
-    # Fetch all ranked rows so we can locate the requesting user's rank
-    # regardless of whether they fall inside the display limit.
     all_results = (
         query.group_by(User.id)
-        .order_by(func.coalesce(func.sum(TestResult.percentage), 0).desc())
+        .order_by(User.score.desc())
         .all()
     )
 

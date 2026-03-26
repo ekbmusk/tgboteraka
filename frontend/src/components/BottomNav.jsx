@@ -1,18 +1,22 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import WebApp from '@twa-dev/sdk'
-import { Home, BookOpen, Calculator, Brain, MessageCircle } from 'lucide-react'
+import { Home, BookOpen, Calculator, Brain, MessageCircle, Settings, FlaskConical } from 'lucide-react'
 
-const TABS = [
+const BASE_TABS = [
   { path: '/', Icon: Home, label: 'Басты' },
   { path: '/theory', Icon: BookOpen, label: 'Теория' },
+  { path: '/lab', Icon: FlaskConical, label: 'Зертхана' },
   { path: '/problems', Icon: Calculator, label: 'Есеп' },
   { path: '/test', Icon: Brain, label: 'Тест' },
   { path: '/ask-ai', Icon: MessageCircle, label: 'AI' },
 ]
 
-export default function BottomNav() {
+const ADMIN_TAB = { path: '/admin', Icon: Settings, label: 'Admin' }
+
+export default function BottomNav({ isAdmin }) {
   const navigate = useNavigate()
   const { pathname } = useLocation()
+  const TABS = isAdmin ? [...BASE_TABS, ADMIN_TAB] : BASE_TABS
 
   const handleTab = (path) => {
     if (path === pathname) return
@@ -22,14 +26,22 @@ export default function BottomNav() {
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-50 blur-bg border-t border-border"
-      style={{ background: 'rgba(15,15,26,0.92)', paddingBottom: 'max(8px, env(safe-area-inset-bottom))' }}
+      className="glass glass-shine"
+      style={{
+        position: 'fixed',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 9999,
+        paddingBottom: 'max(8px, env(safe-area-inset-bottom))',
+        borderTop: '1px solid rgba(255,255,255,0.08)',
+      }}
     >
       <div className="flex items-stretch justify-around px-2 pt-2">
         {TABS.map(({ path, Icon, label }) => {
           const active = pathname === path
           return (
-            <button key={path} onClick={() => handleTab(path)} className="tab-item flex-1 relative">
+            <button key={path} onClick={() => handleTab(path)} className={`tab-item flex-1 relative ${active ? 'glass-breathe' : ''}`}>
               {active && (
                 <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary rounded-full" />
               )}

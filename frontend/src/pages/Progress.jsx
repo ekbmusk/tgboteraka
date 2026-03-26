@@ -14,12 +14,22 @@ export default function Progress() {
   const { user } = useUserStore()
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  const fetchProgress = () => {
+    if (!user?.id) { setLoading(false); return }
+    setLoading(true)
+    setError(null)
+    progressAPI.getUserProgress(user.id)
+      .then(setStats)
+      .catch(() => setError('Деректер жүктелмеді'))
+      .finally(() => setLoading(false))
+  }
 
   useEffect(() => {
     WebApp.BackButton.show()
     WebApp.BackButton.onClick(() => navigate('/'))
-    if (user?.id) progressAPI.getUserProgress(user.id).then(setStats).catch(() => {}).finally(() => setLoading(false))
-    else setLoading(false)
+    fetchProgress()
     return () => WebApp.BackButton.hide()
   }, [user?.id])
 
@@ -32,7 +42,12 @@ export default function Progress() {
           <p className="text-sm text-text-2">Жалпы үлгерімің</p>
         </div>
 
-        {loading ? (
+        {error ? (
+          <div className="text-center py-12">
+            <p className="text-text-3 text-sm mb-3">{error}</p>
+            <button onClick={fetchProgress} className="text-primary text-sm font-semibold">Қайталау</button>
+          </div>
+        ) : loading ? (
           <div className="space-y-3">{[0,1,2].map(i => <SkeletonCard key={i} />)}</div>
         ) : (
           <>

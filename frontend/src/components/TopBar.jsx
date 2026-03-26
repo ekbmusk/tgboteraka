@@ -35,25 +35,6 @@ function ProfileSheet({ onClose, user }) {
     if (!user?.id) return
     progressAPI.getUserProgress(user.id).then(setStats).catch(() => { })
     ratingAPI.getMyRank(user.id).then(setRank).catch(() => { })
-    // Fetch user settings
-    fetch(`/api/users/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        telegram_id: user.id,
-        username: user.username ?? null,
-        photo_url: (user.photo_url && user.photo_url.startsWith('http')) ? user.photo_url : null,
-        first_name: user.first_name ?? null,
-        last_name: user.last_name ?? null,
-        language_code: user.language_code ?? 'kk',
-      }),
-    })
-      .then(r => r.json())
-      .then(d => {
-        setNotifEnabled(d.notifications_enabled ?? true)
-        setLevel(d.level ?? 'medium')
-      })
-      .catch(() => { })
   }, [user?.id])
 
   const toggleNotifications = async () => {
@@ -195,8 +176,8 @@ export default function TopBar({ title, showBack, onBack }) {
 
   return (
     <>
-      <div className="flex items-center justify-between px-4 py-3 sticky top-0 z-40"
-        style={{ background: 'rgba(15,15,26,0.9)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+      <div className="flex items-center justify-between px-4 py-3 sticky top-0 z-40 glass glass-shine glass-glow"
+        style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
         {showBack ? (
           <button onClick={onBack} className="flex items-center gap-2 pressable">
             <ArrowLeft size={20} strokeWidth={1.5} className="text-text-2" />

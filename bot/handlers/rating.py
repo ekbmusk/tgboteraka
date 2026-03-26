@@ -1,3 +1,4 @@
+import logging
 import httpx
 from html import escape
 from aiogram import Router, F
@@ -8,6 +9,7 @@ from config import BACKEND_URL
 from keyboards.inline_kb import open_app_button
 
 router = Router()
+logger = logging.getLogger(__name__)
 
 MEDAL = {0: "🥇", 1: "🥈", 2: "🥉"}
 
@@ -39,8 +41,8 @@ async def _fetch_leaderboard(telegram_id: int) -> tuple[list[dict], dict | None]
             if r.status_code == 200:
                 data = r.json()
                 return data.get("leaderboard", []), data.get("my_rank")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"Failed to fetch leaderboard: {e}")
     return [], None
 
 

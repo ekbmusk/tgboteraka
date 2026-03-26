@@ -44,7 +44,7 @@ class ProblemAdminBase(BaseModel):
     topic: str = Field(min_length=2, max_length=120)
     question: str = Field(min_length=5)
     formula: Optional[str] = None
-    correct_answer: str = Field(min_length=1, max_length=200)
+    correct_answer: str = Field(default="", max_length=200)
     solution: Optional[str] = None
     difficulty: str = Field(default="easy")
     tags: list[str] = Field(default_factory=list)
@@ -97,7 +97,7 @@ class ProblemAdminOut(BaseModel):
     topic: str
     question: str
     formula: Optional[str]
-    correct_answer: str
+    correct_answer: Optional[str]
     solution: Optional[str]
     difficulty: str
     tags: list[str]

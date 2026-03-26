@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional, List
 from sqlalchemy.orm import Session
-from app.services.gemini_service import get_ai_answer
+from app.services.ai_service import get_ai_answer
 from app.database.database import get_db
 from app.models.chat_history import ChatHistory
 from app.models.user import User
@@ -13,6 +13,22 @@ router = APIRouter()
 
 HISTORY_LIMIT = 20  # messages stored per user
 CONTEXT_MESSAGES = 6  # messages sent to AI
+
+# Simple in-memory rate limiter
+import time as _time
+_rate_limits: dict[int, list[float]] = {}
+_RATE_LIMIT_MAX = 10  # max requests
+_RATE_LIMIT_WINDOW = 60  # per 60 seconds
+
+def _check_rate_limit(telegram_id: int):
+    now = _time.time()
+    if telegram_id not in _rate_limits:
+        _rate_limits[telegram_id] = []
+    # Remove expired entries
+    _rate_limits[telegram_id] = [t for t in _rate_limits[telegram_id] if now - t < _RATE_LIMIT_WINDOW]
+    if len(_rate_limits[telegram_id]) >= _RATE_LIMIT_MAX:
+        raise HTTPException(status_code=429, detail="Тым жиі сұрақ. 1 минут күтіңіз.")
+    _rate_limits[telegram_id].append(now)
 
 
 def _build_student_context(telegram_id: int, db: Session) -> str:
@@ -88,6 +104,8 @@ def _is_jailbreak(text: str) -> bool:
 async def ask_question(body: AskRequest, db: Session = Depends(get_db)):
     if not body.question.strip():
         raise HTTPException(status_code=400, detail="Сұрақ бос болмауы керек")
+    if body.telegram_id:
+        _check_rate_limit(body.telegram_id)
 
     if _is_jailbreak(body.question):
         return {"answer": "Мен тек физика сұрақтарына жауап беремін. Физика тақырыбына сұрақ қой — мен көмектесемін! ⚛️"}

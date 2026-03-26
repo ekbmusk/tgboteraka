@@ -1,3 +1,4 @@
+import logging
 import httpx
 from datetime import datetime
 from aiogram import Router, F
@@ -8,6 +9,7 @@ from config import BACKEND_URL
 from keyboards.inline_kb import open_app_button
 
 router = Router()
+logger = logging.getLogger(__name__)
 
 
 def _streak_bar(streak: int, days: int = 7) -> str:
@@ -33,8 +35,8 @@ async def _fetch_streak(telegram_id: int) -> dict:
             r = await client.get(f"{BACKEND_URL}/api/progress/{telegram_id}")
             if r.status_code == 200:
                 return r.json()
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"Failed to fetch streak for {telegram_id}: {e}")
     return {}
 
 

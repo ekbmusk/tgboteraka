@@ -1,4 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+
+from app.database.database import get_db
+from app.models.theory_content import TheoryContent
 
 router = APIRouter()
 
@@ -145,3 +149,38 @@ async def get_topic_detail(topic_id: str):
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Тақырып табылмады")
     return topic
+
+
+@router.get("/lectures")
+async def get_lectures(db: Session = Depends(get_db)):
+    """Return all lecture topics that have content blocks."""
+    lectures = (
+        db.query(TheoryContent)
+        .filter(TheoryContent.topic_id.like("lecture_%"))
+        .order_by(TheoryContent.topic_id)
+        .all()
+    )
+    return [
+        {
+            "id": lec.topic_id,
+            "title": lec.title,
+            "block_count": len(lec.blocks) if lec.blocks else 0,
+        }
+        for lec in lectures
+        if lec.blocks  # only include lectures with content
+    ]
+
+
+@router.get("/lectures/{topic_id}")
+async def get_lecture_detail(topic_id: str, db: Session = Depends(get_db)):
+    from fastapi import HTTPException
+
+    lecture = db.query(TheoryContent).filter(TheoryContent.topic_id == topic_id).first()
+    if not lecture:
+        raise HTTPException(status_code=404, detail="Лекция табылмады")
+    return {
+        "id": lecture.topic_id,
+        "title": lecture.title,
+        "blocks": lecture.blocks or [],
+        "updated_at": lecture.updated_at,
+    }

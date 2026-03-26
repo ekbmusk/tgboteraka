@@ -30,6 +30,7 @@ export const adminAPI = {
 
     getUsers: (params) => client.get(`${ADMIN_PREFIX}/users`, { params }),
     getUserById: (id) => client.get(`${ADMIN_PREFIX}/users/${id}`),
+    getUserActivity: (id) => client.get(`${ADMIN_PREFIX}/users/${id}/activity`),
     toggleUserBan: (id, payload) => client.patch(`${ADMIN_PREFIX}/users/${id}/ban`, payload),
     toggleNotifications: (id, payload) => client.patch(`${ADMIN_PREFIX}/users/${id}/notifications`, payload),
     exportUsers: () => client.get(`${ADMIN_PREFIX}/users/export`, { responseType: 'blob' }),

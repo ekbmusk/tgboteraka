@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import WebApp from '@twa-dev/sdk'
 import { useUserStore } from './store/userStore'
 import BottomNav from './components/BottomNav'
@@ -12,16 +12,17 @@ import Progress from './pages/Progress'
 import Rating from './pages/Rating'
 import AskAI from './pages/AskAI'
 import Help from './pages/Help'
+import Lab from './pages/Lab'
+import Admin, { ADMIN_IDS } from './pages/Admin'
 
-const NAV_ROUTES = ['/', '/theory', '/problems', '/test', '/ask-ai']
 
 function AppInner() {
-  const location = useLocation()
-  const showNav = NAV_ROUTES.includes(location.pathname)
+  const { user } = useUserStore()
+  const isAdmin = user && (user.is_admin || ADMIN_IDS.includes(user.id))
 
   return (
     <div className="min-h-screen bg-bg text-text-1 flex flex-col">
-      <div className={`flex-1 ${showNav ? 'pb-nav' : ''}`}>
+      <div className="flex-1 pb-nav">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/theory" element={<Theory />} />
@@ -31,9 +32,11 @@ function AppInner() {
           <Route path="/rating" element={<Rating />} />
           <Route path="/ask-ai" element={<AskAI />} />
           <Route path="/help" element={<Help />} />
+          <Route path="/lab" element={<Lab />} />
+          <Route path="/admin" element={<Admin />} />
         </Routes>
       </div>
-      {showNav && <BottomNav />}
+      <BottomNav isAdmin={isAdmin} />
     </div>
   )
 }
