@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import WebApp from '@twa-dev/sdk'
 import { useUserStore } from './store/userStore'
+import client from './api/client'
 import BottomNav from './components/BottomNav'
 import Onboarding from './pages/Onboarding'
 import Home from './pages/Home'
@@ -54,25 +55,21 @@ export default function App() {
     WebApp.setBackgroundColor('#0F0F1A')
     const tgUser = WebApp.initDataUnsafe?.user
     if (tgUser) {
-      const proxyAvatarUrl = `/api/users/${tgUser.id}/avatar`
+      const baseURL = import.meta.env.VITE_API_URL || '/api'
+      const proxyAvatarUrl = `${baseURL}/users/${tgUser.id}/avatar`
       const user = {
         ...tgUser,
         photo_url: tgUser.photo_url || tgUser.photoUrl || proxyAvatarUrl,
       }
       setUser(user)
-      fetch('/api/users/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      client.post('/users/register', {
           telegram_id: user.id,
           username: user.username ?? null,
           photo_url: (tgUser.photo_url || tgUser.photoUrl) ?? null,
           first_name: user.first_name ?? null,
           last_name: user.last_name ?? null,
           language_code: user.language_code ?? 'kk',
-        }),
-      })
-        .then(r => r.json())
+        })
         .then((registered) => {
           if (!registered) return
           setUser({
