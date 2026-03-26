@@ -44,5 +44,6 @@ app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 
 
 @app.get("/health")
+@app.head("/health")
 async def health():
     return {"status": "ok", "service": "physics-bot-api"}
