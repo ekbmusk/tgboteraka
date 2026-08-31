@@ -17,5 +17,14 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
+    chunkSizeWarningLimit: 700,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          katex: ['katex', 'react-katex'],
+          vendor: ['react', 'react-dom', 'react-router-dom', 'zustand', 'axios'],
+        },
+      },
+    },
   },
 })

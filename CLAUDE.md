@@ -60,6 +60,7 @@ No test suite or linter is configured. No CI/CD pipelines exist.
 - **API proxy**: Vite dev server proxies `/api` → `http://localhost:8000` (see `vite.config.js`)
 - **Telegram SDK**: `@twa-dev/sdk` integrated via `src/hooks/useTelegram.js` (haptics, back button, theme)
 - **Tailwind**: Custom design tokens in `tailwind.config.js` (colors, animations, gradients)
+- **Design system («Дәптер» — dark physics notebook)**: ink background with a faint millimetre grid (`body` in `src/index.css`), amber `primary` (#FFB020, ink text `primary-ink` on it) as the only loud accent, sky `secondary` (#5EC8FF) for formulas/AI. Fonts: Unbounded (`.display` — titles, big numbers) + Golos Text (body); both cover Kazakh Cyrillic. Legacy `.glass*` class names are kept but now mean flat paper cards; blur only on TopBar/BottomNav. Shared primitives: `Button`, `Card`, `EmptyState`, `Toast` (`toast.error(...)` from anywhere), `FormulaRenderer` (KaTeX + Markdown-lite, sanitises LLM LaTeX).
 
 ### Backend Internals
 - **Entry**: `main.py` — FastAPI app; lifespan hook calls `create_tables()` from `app/database/database.py`

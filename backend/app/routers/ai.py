@@ -164,7 +164,18 @@ def clear_history(telegram_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/hint")
-async def get_hint(body: HintRequest):
-    hint_question = f"Есеп #{body.problem_id} бойынша кішкентай кеңес бер, бірақ жауапты тікелей айтпа."
+async def get_hint(body: HintRequest, db: Session = Depends(get_db)):
+    # The model has no access to the DB — the hint prompt must carry the problem text itself.
+    from app.models.problem import Problem
+    problem = db.query(Problem).filter(Problem.id == body.problem_id).first()
+    if not problem:
+        raise HTTPException(status_code=404, detail="Есеп табылмады")
+
+    hint_question = (
+        f"Физика есебі:\n{problem.question}\n\n"
+        + (f"Формула: {problem.formula}\n\n" if problem.formula else "")
+        + "Оқушыға 2-3 сөйлемнен тұратын қысқа кеңес бер: қай заңды/формуланы қолдану керек және неден бастау керек. "
+        "Соңғы жауапты да, есептеу нәтижесін де айтпа."
+    )
     answer = await get_ai_answer(question=hint_question)
     return {"hint": answer}

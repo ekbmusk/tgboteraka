@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import WebApp from '@twa-dev/sdk'
-import { FlaskConical, ExternalLink, Target, Wrench, ChevronDown, ChevronUp } from 'lucide-react'
+import { ExternalLink, Target, Wrench, ChevronDown, ChevronUp } from 'lucide-react'
 import TopBar from '../components/TopBar'
-import Card from '../components/Card'
 
 const LABS = [
   {
@@ -141,59 +140,50 @@ export default function Lab() {
   }
 
   return (
-    <div className="min-h-screen bg-bg page-enter">
+    <div className="min-h-screen page-enter">
       <TopBar />
-      <div className="px-4 pt-2 pb-6">
-        <div className="flex items-center gap-2 mb-1">
-          <FlaskConical size={22} className="text-primary" />
-          <h1 className="text-2xl font-extrabold text-text-1">Зертхана</h1>
-        </div>
-        <p className="text-sm text-text-2 mb-5">Виртуалды зертханалық жұмыстар</p>
+      <div className="px-4 pt-3 pb-6">
+        <h1 className="display text-2xl text-text-1 mb-1">Зертхана</h1>
+        <p className="text-sm text-text-2 mb-4">{LABS.length} виртуалды зертханалық жұмыс</p>
 
-        <div className="space-y-3">
+        <div className="space-y-2.5 stagger">
           {LABS.map((lab, idx) => {
             const isOpen = expanded === lab.id
             return (
-              <div key={lab.id} className="glass-card rounded-2xl overflow-hidden">
+              <div key={lab.id} className={`card rounded-2xl overflow-hidden transition-colors ${isOpen ? 'border-[#B39DFF]/40' : ''}`}>
                 <button
+                  type="button"
                   onClick={() => toggleExpand(lab.id)}
+                  aria-expanded={isOpen}
                   className="w-full text-left p-4 flex items-start gap-3 pressable"
                 >
-                  <div className="w-10 h-10 rounded-xl glass-btn flex items-center justify-center flex-shrink-0 text-sm font-bold text-white">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 display text-sm tnum"
+                    style={{ background: 'rgba(179,157,255,0.14)', color: '#B39DFF', border: '1px solid rgba(179,157,255,0.25)' }}>
                     {idx + 1}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-text-1 leading-snug">{lab.title}</p>
-                    <p className="text-[11px] text-text-3 mt-1 truncate">{lab.titleRu}</p>
+                    <p className="text-2xs text-text-3 mt-1 truncate">{lab.titleRu}</p>
                   </div>
-                  {isOpen ? (
-                    <ChevronUp size={16} className="text-text-3 flex-shrink-0 mt-1" />
-                  ) : (
-                    <ChevronDown size={16} className="text-text-3 flex-shrink-0 mt-1" />
-                  )}
+                  {isOpen
+                    ? <ChevronUp size={16} className="text-text-3 flex-shrink-0 mt-1" />
+                    : <ChevronDown size={16} className="text-text-3 flex-shrink-0 mt-1" />}
                 </button>
 
                 {isOpen && (
-                  <div className="px-4 pb-4 space-y-3 animate-slide-up">
-                    <div className="glass-input rounded-xl p-3">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <Target size={12} className="text-primary" />
-                        <p className="text-[10px] font-semibold text-primary uppercase">Мақсаты</p>
-                      </div>
-                      <p className="text-xs text-text-2 leading-relaxed">{lab.goal}</p>
+                  <div className="px-4 pb-4 space-y-2.5 animate-slide-up">
+                    <div className="bg-surface-2 border border-border rounded-xl p-3">
+                      <p className="eyebrow text-secondary mb-1 flex items-center gap-1.5"><Target size={11} /> Мақсаты</p>
+                      <p className="text-sm text-text-2 leading-relaxed">{lab.goal}</p>
                     </div>
-
-                    <div className="glass-input rounded-xl p-3">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <Wrench size={12} className="text-warning" />
-                        <p className="text-[10px] font-semibold text-warning uppercase">Құралдар</p>
-                      </div>
-                      <p className="text-xs text-text-2 leading-relaxed">{lab.equipment}</p>
+                    <div className="bg-surface-2 border border-border rounded-xl p-3">
+                      <p className="eyebrow text-primary mb-1 flex items-center gap-1.5"><Wrench size={11} /> Құралдар</p>
+                      <p className="text-sm text-text-2 leading-relaxed">{lab.equipment}</p>
                     </div>
-
                     <button
+                      type="button"
                       onClick={() => openLab(lab.url)}
-                      className="w-full glass-btn rounded-xl py-3 flex items-center justify-center gap-2 pressable text-sm font-semibold text-white"
+                      className="w-full bg-primary text-primary-ink rounded-xl py-3 flex items-center justify-center gap-2 pressable text-sm font-semibold shadow-glow-primary"
                     >
                       <ExternalLink size={16} />
                       Зертхананы ашу

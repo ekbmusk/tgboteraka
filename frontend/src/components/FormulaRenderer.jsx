@@ -21,8 +21,13 @@ const SafeBlock = ({ math }) => {
 const TEXT_GROUP = /\\(text|textrm|textit|textbf|mathrm|mathit|mathbf|operatorname)\{([^{}]*)\}/g
 const TEXT_OPS = { '·': '\\cdot', '⋅': '\\cdot', '×': '\\times', '÷': '\\div' }
 
+// Imported lectures glue Greek macros to the next symbol ("\\Deltax", "\\omegat"),
+// which KaTeX reads as one undefined command. Re-insert the space.
+const GREEK = /\\(Delta|Gamma|Theta|Lambda|Omega|Phi|Pi|Psi|Sigma|alpha|beta|gamma|delta|epsilon|varepsilon|zeta|eta|theta|lambda|mu|nu|xi|pi|rho|sigma|tau|phi|varphi|chi|psi|omega)(?=[A-Za-z])/g
+
 export function sanitizeLatex(src) {
   if (!src) return src
+  src = src.replace(GREEK, '\\$1 ')
   return src.replace(TEXT_GROUP, (whole, cmd, body) => {
     if (!/[·⋅×÷]/.test(body)) return whole
     return body
