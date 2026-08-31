@@ -48,7 +48,8 @@ function ResultCard({ result, onNext, isAI }) {
             {isAI ? '🤖 AI шешімі:' : 'Шешімі:'}
           </p>
           <div className="text-sm text-text-2 leading-relaxed">
-            <FormulaRenderer text={result.solution} />
+            {/* The AI answer starts with a "НӘТИЖЕ: ..." verdict line; the card header already shows it */}
+            <FormulaRenderer text={result.solution.replace(/^\s*НӘТИЖЕ:[^\n]*\n*/i, '')} />
           </div>
         </div>
       )}
