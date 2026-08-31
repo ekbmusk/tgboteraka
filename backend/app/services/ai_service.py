@@ -42,7 +42,14 @@ def _get_client() -> AsyncOpenAI:
     )
 
 
-async def get_ai_answer(question: str, history: List[Dict] = None, student_context: str = None) -> str:
+async def get_ai_answer(
+    question: str,
+    history: List[Dict] = None,
+    student_context: str = None,
+    *,
+    reasoning_effort: str = "low",
+    temperature: float = 0.3,
+) -> str:
     system = SYSTEM_PROMPT
     if student_context:
         system += f"\n\n{student_context}"
@@ -60,9 +67,10 @@ async def get_ai_answer(question: str, history: List[Dict] = None, student_conte
             model=_get_model(),
             messages=messages,
             max_tokens=1500,
-            temperature=0.3,
-            # gpt-oss models spend tokens on hidden reasoning; keep it low for a chat tutor.
-            extra_body={"reasoning_effort": "low"},
+            temperature=temperature,
+            # gpt-oss models spend tokens on hidden reasoning; "low" is enough for chat,
+            # answer grading passes "medium".
+            extra_body={"reasoning_effort": reasoning_effort},
         )
         return response.choices[0].message.content
     except ValueError:

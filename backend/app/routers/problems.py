@@ -1,3 +1,4 @@
+import re
 from fastapi import APIRouter, Depends, Query, HTTPException, Request
 from sqlalchemy.orm import Session
 from typing import Optional, List
@@ -159,42 +160,62 @@ async def check_answer(problem_id: int, body: AnswerCheck, request: Request, db:
     return result
 
 
+VERDICT_RE = re.compile(r"НӘТИЖЕ\s*:\s*(ДҰРЫС|ҚАТЕ)\b", re.IGNORECASE)
+
+
+def parse_verdict(ai_response: str) -> bool:
+    """True only for an explicit 'НӘТИЖЕ: ДҰРЫС' that is not negated ('ДҰРЫС ЕМЕС')."""
+    for line in ai_response.split("\n"):
+        m = VERDICT_RE.search(line)
+        if not m:
+            continue
+        if m.group(1).upper() != "ДҰРЫС":
+            return False
+        tail = line[m.end():].strip().upper()
+        return not tail.startswith("ЕМЕС")
+    return False
+
+
+def strip_verdict(ai_response: str) -> str:
+    """Drop the verdict line — the card already shows the result."""
+    lines = ai_response.strip().split("\n")
+    if lines and VERDICT_RE.search(lines[0]):
+        lines = lines[1:]
+    return "\n".join(lines).strip()
+
+
 async def _ai_check_answer(problem: Problem, user_answer: str) -> AnswerResult:
     import logging
     from app.services.ai_service import get_ai_answer
 
     logger = logging.getLogger(__name__)
+    student = (user_answer or "").strip()
 
     prompt = (
         f"Физика есебі:\n{problem.question}\n\n"
-    )
-    if problem.formula:
-        prompt += f"Формула: {problem.formula}\n\n"
-    prompt += (
-        f"Оқушының жауабы: {user_answer}\n\n"
-        "Осы есептің дұрыс шешімін тап және оқушының жауабын тексер. "
-        "Жауабыңның БІРІНШІ жолы міндетті түрде тек мына екі нұсқаның бірі болсын:\n"
-        "НӘТИЖЕ: ДҰРЫС\n"
-        "немесе\n"
-        "НӘТИЖЕ: ҚАТЕ\n\n"
-        "Содан кейін шешімді жаз."
+        + (f"Формула: {problem.formula}\n\n" if problem.formula else "")
+        + f"Оқушының жауабы (сөзбе-сөз): «{student}»\n\n"
+        "Сен қатаң тексеруші мұғалімсің. Тәртіп:\n"
+        "1. Алдымен есепті өзің шеш және дұрыс жауапты (сан + бірлік немесе формула) анықта.\n"
+        "2. Содан кейін оқушының жауабын өз жауабыңмен салыстыр.\n"
+        "3. ДҰРЫС деп тек мына жағдайда ғана бағала: оқушы жауабында дұрыс сан бар (бірлік жоқ болса да, "
+        "±3 % дәлдікпен) немесе есеп формула сұраса — дұрыс формуланың эквиваленті бар.\n"
+        "4. Қалған барлық жағдайда — ҚАТЕ: жауап бос, санды қамтымайды (сан сұралғанда), есепке қатысы жоқ "
+        "мәтін, кездейсоқ әріптер, басқа тілдегі сөздер, «білмеймін», немесе сан дұрыс емес.\n"
+        "5. Мейірімді болу үшін ҚАТЕ жауапты ДҰРЫС деп жазуға ТЫЙЫМ САЛЫНАДЫ.\n\n"
+        "Жауап форматы (қатаң):\n"
+        "1-жол: НӘТИЖЕ: ҚАТЕ  немесе  НӘТИЖЕ: ДҰРЫС\n"
+        "2-жол: Оқушы жауабы қандай болғанын және неге солай бағаланғанын бір сөйлеммен айт.\n"
+        "Содан кейін толық шешімді формулалармен жаз."
     )
 
     try:
-        ai_response = await get_ai_answer(prompt)
-
-        # Parse the AI response — look for НӘТИЖЕ line
-        is_correct = False
-        for line in ai_response.split("\n"):
-            line_upper = line.strip().upper()
-            if "НӘТИЖЕ" in line_upper:
-                is_correct = "ДҰРЫС" in line_upper and "ҚАТЕ" not in line_upper
-                break
-
+        ai_response = await get_ai_answer(prompt, reasoning_effort="medium", temperature=0.0)
+        is_correct = parse_verdict(ai_response)
         return AnswerResult(
             correct=is_correct,
             message="Дұрыс жауап!" if is_correct else "Қате жауап.",
-            solution=ai_response,
+            solution=strip_verdict(ai_response),
         )
     except Exception as e:
         logger.error(f"AI answer check failed for problem {problem.id}: {e}")
