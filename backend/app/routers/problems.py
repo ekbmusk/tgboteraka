@@ -131,11 +131,7 @@ async def check_answer(problem_id: int, body: AnswerCheck, request: Request, db:
     if not problem.correct_answer:
         result = await _ai_check_answer(problem, body.answer)
     else:
-        # Normalize answer for comparison
-        user_ans = body.answer.strip().replace(",", ".").lower()
-        correct = problem.correct_answer.strip().replace(",", ".").lower()
-
-        is_correct = user_ans == correct
+        is_correct = answers_match(body.answer, problem.correct_answer)
         result = AnswerResult(
             correct=is_correct,
             message="Дұрыс жауап!" if is_correct else f"Қате. Дұрыс жауап: {problem.correct_answer}",
@@ -158,6 +154,34 @@ async def check_answer(problem_id: int, body: AnswerCheck, request: Request, db:
             pass
 
     return result
+
+
+NUMBER_RE = re.compile(r"[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?")
+
+
+def _first_number(text: str):
+    """First number in a free-form answer: '20 м/с' → 20.0, '1,99' → 1.99, '−5' → -5.0."""
+    cleaned = (text or "").replace(",", ".").replace("−", "-").replace("–", "-")
+    m = NUMBER_RE.search(cleaned)
+    return float(m.group(0)) if m else None
+
+
+def answers_match(user_answer: str, correct_answer: str, rel_tol: float = 0.02) -> bool:
+    """
+    Stored-answer grading. Numbers compare numerically with a 2 % tolerance so
+    '5.0', '5 м/с' and a rounded '2' for 1.99 all pass; anything else falls back
+    to a case-insensitive string comparison.
+    """
+    user = (user_answer or "").strip()
+    correct = (correct_answer or "").strip()
+    if not user:
+        return False
+    u_num, c_num = _first_number(user), _first_number(correct)
+    if u_num is not None and c_num is not None:
+        if c_num == 0:
+            return abs(u_num) < 1e-9
+        return abs(u_num - c_num) <= rel_tol * abs(c_num)
+    return user.replace(",", ".").lower() == correct.replace(",", ".").lower()
 
 
 VERDICT_RE = re.compile(r"НӘТИЖЕ\s*:\s*(ДҰРЫС|ҚАТЕ)\b", re.IGNORECASE)
